@@ -93,27 +93,139 @@ button.play { min-width: 7rem; }
 .badge.err { background: #4a1f22; color: #ee5253; }
 
 .mixer { margin-top: 1rem; }
-.transport {
-  display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
-  background: var(--panel); border: 1px solid var(--line);
-  border-radius: 8px; padding: 0.9rem 1rem; margin-bottom: 1rem;
-}
-.transport .time { font-variant-numeric: tabular-nums; }
-.zoomctl { display: flex; gap: 0.3rem; align-items: center; }
-.zoomctl .mini { width: 30px; }
-.ctrl { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; color: var(--muted); }
-.ctrl.checkbox { color: var(--text); }
 
-.channels { display: flex; flex-direction: column; gap: 0.5rem; }
-.channel {
-  display: flex; flex-direction: column; gap: 0.35rem;
+/* ---- primary practice bar: transport, timeline, loop, speed, solo ---- */
+.practice {
+  display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap;
   background: var(--panel); border: 1px solid var(--line);
-  border-radius: 8px; padding: 0.6rem 1rem;
+  border-radius: 10px; padding: 0.8rem 1rem; margin-bottom: 0.4rem;
 }
-.channel.star { border-color: var(--accent); }
-.ch-head { display: flex; align-items: center; gap: 0.6rem; }
-.ch-head strong { flex: 0 0 90px; text-transform: capitalize; }
-.ch-head .vol { flex: 1; }
+.clock { font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 0.95rem; }
+.clock .now { color: var(--text); font-weight: 600; }
+.scrub { position: relative; flex: 1 1 220px; height: 28px; cursor: pointer; touch-action: none; }
+.scrub:focus-visible { outline: 1px solid var(--accent2); border-radius: 6px; }
+.scrub::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 12px; height: 4px;
+  border-radius: 2px; background: var(--line);
+}
+.scrub-region {
+  position: absolute; top: 10px; height: 8px; border-radius: 4px;
+  background: rgba(255, 159, 67, 0.3); border: 1px solid var(--accent);
+}
+.scrub-played {
+  position: absolute; left: 0; top: 12px; height: 4px; border-radius: 2px;
+  background: var(--accent2);
+}
+.scrub-knob {
+  position: absolute; top: 8px; width: 12px; height: 12px; margin-left: -6px;
+  border-radius: 50%; background: #fff; box-shadow: 0 0 6px rgba(255, 255, 255, 0.5);
+}
+
+.chip {
+  display: inline-flex; align-items: center; gap: 0.4rem; height: 32px; padding: 0 0.75rem;
+  border: 1px solid var(--line); border-radius: 6px; background: transparent;
+  color: var(--muted); font-size: 0.85rem; white-space: nowrap;
+}
+.chip.loop { font-variant-numeric: tabular-nums; }
+.chip.loop.on {
+  border-color: var(--accent); color: var(--accent);
+  background: rgba(255, 159, 67, 0.08); cursor: pointer;
+}
+.chip.loop.on:hover { background: rgba(255, 159, 67, 0.14); }
+.chip.loop.on .x { cursor: pointer; padding: 2px 5px; margin-right: -0.35rem; border-radius: 4px; }
+.chip.loop.on .x:hover { background: rgba(255, 159, 67, 0.25); color: #fff; }
+.chip.solo-toggle { cursor: pointer; text-transform: capitalize; }
+.chip.solo-toggle:hover { border-color: var(--accent2); }
+.chip.solo-toggle.on {
+  border-color: var(--accent2); color: var(--accent2);
+  background: rgba(84, 160, 255, 0.1); font-weight: 600;
+}
+
+.zoomctl { display: flex; gap: 0.3rem; align-items: center; }
+.zoomctl .mini { width: 30px; height: 30px; }
+.ctrl.speed { display: flex; flex-direction: column; gap: 0.3rem; }
+.ctrl.speed input[type="range"] { width: 150px; }
+.presets { display: flex; gap: 0.25rem; }
+.mini.rate { width: auto; min-width: 36px; height: 24px; padding: 0 0.4rem; font-size: 0.7rem; }
+
+/* ---- practice status strip ---- */
+.status {
+  display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap;
+  padding: 0.2rem 0.3rem 0.6rem; font-size: 0.85rem; color: var(--muted);
+}
+.status strong { color: var(--text); text-transform: capitalize; }
+.status .hi { color: var(--text); }
+.status .sep { opacity: 0.5; }
+.status .spacer { flex: 1; }
+
+/* ---- stem lanes: one expanded selected stem, compact the rest ---- */
+.lanes { display: flex; flex-direction: column; gap: 0.5rem; }
+.lane {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: 10px; padding: 0.5rem 0.9rem;
+}
+.lane.selected { border-color: var(--accent); padding: 0.8rem 1rem; }
+.lane.compact { padding: 0.45rem 0.9rem; }
+.lane.compact.is-solo { border-color: rgba(84, 160, 255, 0.55); }
+.lane.is-muted .waveform { opacity: 0.55; }
+.lane.selected .waveform { height: 96px; }
+.lane.compact .waveform { height: 44px; }
+
+.lane-head { display: flex; align-items: center; gap: 0.7rem; min-height: 34px; }
+.lane-name {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  border: none; background: transparent; cursor: default;
+  color: var(--text); font-weight: 600; font-size: 0.95rem; text-transform: capitalize;
+  padding: 0.3rem 0.55rem; margin-left: -0.55rem; border-radius: 6px;
+}
+.lane.compact .lane-name { cursor: pointer; color: var(--muted); font-weight: 500; }
+.lane.compact .lane-name:hover { color: var(--text); background: rgba(255, 255, 255, 0.05); }
+.swatch { width: 10px; height: 10px; border-radius: 3px; }
+.state {
+  font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em;
+  padding: 0.15rem 0.5rem; border-radius: 999px;
+  background: rgba(84, 160, 255, 0.15); color: var(--accent2);
+}
+.state.warn { background: rgba(238, 82, 83, 0.15); color: #ee5253; }
+.spacer { flex: 1; }
+
+.lane-tools { display: flex; align-items: center; gap: 0.5rem; margin-left: auto; }
+.lane .vol { width: 140px; }
+.lane.compact .vol { width: 90px; }
+.tool {
+  height: 32px; padding: 0 0.85rem; border-radius: 6px; border: 1px solid var(--line);
+  background: transparent; color: var(--muted); font-size: 0.85rem; cursor: pointer;
+  text-decoration: none; display: inline-flex; align-items: center;
+}
+.tool:hover { border-color: var(--accent2); color: var(--text); }
+.tool.on { background: var(--accent2); border-color: var(--accent2); color: #14171c; font-weight: 600; }
+.tool.warn.on { background: rgba(238, 82, 83, 0.15); border-color: #ee5253; color: #ee5253; }
+.tool.sm { height: 26px; padding: 0 0.55rem; font-size: 0.75rem; }
+.lane-hint { margin: 0.5rem 0 0; }
+
+/* ---- edit toolbar: practice-track manipulation of the selected stem ---- */
+.editbar {
+  display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+  background: var(--panel); border: 1px solid var(--accent); border-radius: 10px;
+  padding: 0.55rem 0.9rem; margin-bottom: 0.5rem;
+}
+.eb-label { font-size: 0.9rem; font-weight: 600; color: var(--text); text-transform: capitalize; }
+.eb-group { display: flex; gap: 0.3rem; }
+.eb-group:not(:first-of-type) {
+  border-left: 1px solid var(--line); padding-left: 0.6rem; margin-left: 0.15rem;
+}
+.eb {
+  height: 28px; padding: 0 0.7rem; border-radius: 6px; border: 1px solid var(--line);
+  background: transparent; color: var(--muted); font-size: 0.8rem; cursor: pointer;
+  text-decoration: none; display: inline-flex; align-items: center; white-space: nowrap;
+}
+.eb:hover:not(:disabled) { border-color: var(--accent); color: var(--text); }
+.eb:disabled, .eb.off { opacity: 0.35; cursor: default; }
+.eb.dl { color: var(--accent2); border-color: rgba(84, 160, 255, 0.4); }
+.eb.dl:hover { border-color: var(--accent2); color: var(--accent2); }
+/* other stems stand aside while one is being edited */
+.mixer.editing .lane.compact { opacity: 0.4; pointer-events: none; }
+
 .mini {
   width: 26px; height: 26px; border-radius: 5px; border: 1px solid var(--line);
   background: transparent; color: var(--muted); cursor: pointer;
@@ -121,10 +233,9 @@ button.play { min-width: 7rem; }
   font-size: 0.75rem; text-decoration: none;
 }
 .mini.active { background: var(--accent); color: #14171c; border-color: var(--accent); }
-.mini.dl { line-height: 24px; }
 
 .waveform {
-  position: relative; height: 64px; cursor: pointer;
+  position: relative; cursor: pointer;
   background: rgba(0, 0, 0, 0.25); border-radius: 4px; overflow: hidden;
   touch-action: none; user-select: none;
 }
@@ -140,18 +251,20 @@ button.play { min-width: 7rem; }
 }
 .wf-dim {
   position: absolute; top: 0; bottom: 0;
-  background: rgba(10, 12, 16, 0.6); pointer-events: none;
+  background: rgba(10, 12, 16, 0.65); pointer-events: none;
 }
 .wf-region {
   position: absolute; top: 0; bottom: 0;
-  background: rgba(255, 159, 67, 0.15);
+  background: rgba(255, 159, 67, 0.18);
   border-left: 1px solid var(--accent); border-right: 1px solid var(--accent);
+  box-shadow: inset 0 0 12px rgba(255, 159, 67, 0.15);
   pointer-events: none;
 }
 .wf-handle {
   position: absolute; top: 0; bottom: 0; width: 8px; margin-left: -4px;
-  background: var(--accent); border-radius: 2px; opacity: 0.85;
+  background: var(--accent); border-radius: 2px;
   pointer-events: none; cursor: ew-resize;
 }
+.lane.selected .wf-handle { width: 10px; margin-left: -5px; opacity: 1; }
 
 input[type="range"] { accent-color: var(--accent); }
