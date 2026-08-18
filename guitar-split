@@ -1,0 +1,39 @@
+#!/bin/sh
+# Two-stage guitar extraction:
+#   1. BS-RoFormer strips vocals (slow, ~3x realtime on CPU, high quality)
+#   2. Demucs htdemucs_6s splits guitar from the instrumental (fast)
+# Usage: ./guitar-split <audio-file> [output-dir]
+# Output: <output-dir>/guitar.wav and <output-dir>/no_guitar.wav
+set -e
+
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 <audio-file> [output-dir]" >&2
+    exit 1
+fi
+
+INPUT="$1"
+OUT="${2:-separated/guitar}"
+STAGE1="$OUT/stage1-vocal-removal"
+
+BASE="$(basename "$INPUT")"
+BASE="${BASE%.*}"
+
+./audio-separator-run \
+    -m model_bs_roformer_ep_317_sdr_12.9755.ckpt \
+    --single_stem instrumental \
+    --output_dir "$STAGE1" \
+    "$INPUT"
+
+./demucs-run \
+    -n htdemucs_6s \
+    --two-stems=guitar \
+    --shifts 5 \
+    -o "$OUT/stage2" \
+    "$STAGE1/${BASE}_(Instrumental)_model_bs_roformer_ep_317_sdr_12."*
+
+mkdir -p "$OUT"
+mv "$OUT"/stage2/htdemucs_6s/*/guitar.wav "$OUT/guitar.wav"
+mv "$OUT"/stage2/htdemucs_6s/*/no_guitar.wav "$OUT/no_guitar.wav"
+rm -rf "$OUT/stage2"
+
+echo "Done: $OUT/guitar.wav, $OUT/no_guitar.wav"

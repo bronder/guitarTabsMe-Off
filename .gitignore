@@ -1,0 +1,22 @@
+# Python
+.venv-demucs/
+__pycache__/
+
+# Node
+web/node_modules/
+web/dist/
+
+# Audio files (never commit music)
+*.flac
+*.wav
+*.mp3
+*.ogg
+*.m4a
+
+# Generated output
+separated/
+test-audio/split-out/
+data/
+
+# ZCode
+.zcode/
