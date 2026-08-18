@@ -26,6 +26,9 @@ a { color: var(--accent2); text-decoration: none; }
 .tagline { color: var(--muted); font-size: 0.9rem; }
 
 main { max-width: 880px; margin: 0 auto; padding: 1.5rem; }
+/* the wave editor wants as much screen width as it can get; the upload
+   page stays a readable centered column */
+main:has(.jobview) { max-width: none; }
 
 .muted { color: var(--muted); }
 .small { font-size: 0.85rem; }

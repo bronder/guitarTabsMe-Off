@@ -42,7 +42,7 @@ const clamp = (v, lo, hi) => Math.max(lo, Math.min(v, hi))
 //   drag on empty waveform -> create region
 //   drag region body       -> move region
 //   drag near region edge  -> resize
-//   plain click            -> seek
+//   plain click            -> seek (clears an active region when outside it)
 //   double click           -> clear region
 //   wheel                  -> zoom around cursor (all stems share the view)
 function Waveform({ url, ctx, color, position, duration, view, region, onRegionChange, onSeek, onZoom }) {
@@ -164,7 +164,12 @@ function Waveform({ url, ctx, color, position, duration, view, region, onRegionC
   const onPointerUp = (e) => {
     const d = dragRef.current
     dragRef.current = null
-    if (d && !d.moved) onSeek(timeAt(e.clientX)) // plain click seeks
+    if (!d || d.moved) return
+    const t = timeAt(e.clientX)
+    // plain click seeks; clicking outside the active region also clears it —
+    // otherwise the rAF tick would yank playback straight back into the loop
+    if (region && (t < region.start || t > region.end)) onRegionChange(null)
+    onSeek(t)
   }
 
   const cursorPct = duration ? clamp((position - viewStart) / viewLen, 0, 1) * 100 : 0
@@ -173,7 +178,7 @@ function Waveform({ url, ctx, color, position, duration, view, region, onRegionC
     <div
       ref={wrapRef}
       className="waveform"
-      title="click: seek · drag: loop region · double-click: clear region · wheel: zoom"
+      title="click: seek · click outside region or double-click: clear loop · drag: loop region · wheel: zoom"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -228,11 +233,12 @@ export default function Mixer({ jobId, stems }) {
   const stemsKey = stems.map((s) => s.name).join(',')
 
   // setting a region implies looping it; if the playhead sits outside the
-  // region, jump to its start so playback begins inside the loop
+  // region, jump to its start so playback begins inside the loop. Clearing a
+  // region (double-click or plain click outside it) exits loop mode entirely.
   const changeRegion = (r) => {
     const prev = regionRef.current
     setLoopRegion(r)
-    if (r) setLoop(true)
+    setLoop(!!r)
     if (r && (!prev || positionRef.current < r.start || positionRef.current > r.end)) {
       elsRef.current.forEach((el) => { el.currentTime = r.start })
       setPosition(r.start)
@@ -352,16 +358,36 @@ export default function Mixer({ jobId, stems }) {
       setPlaying(false)
     } else {
       if (ctx.state === 'suspended') await ctx.resume()
-      // start all from the leader's position, leader plays first so followers chase it
-      const t = els[0].currentTime
+      // with an active region, start the section over from the top instead of
+      // resuming where it was paused; otherwise start from the leader's position
+      const t = regionRef.current ? regionRef.current.start : els[0].currentTime
+      els[0].currentTime = t
       await els[0].play()
       for (let i = 1; i < els.length; i++) {
         els[i].currentTime = t
         els[i].play().catch(() => {})
       }
+      setPosition(t)
       setPlaying(true)
     }
   }
+
+  // space bar toggles play/pause. Controls with native space behavior keep it
+  // (the play button itself, the loop checkbox); range sliders have none, so
+  // space still works right after touching a volume or speed slider.
+  const toggleRef = useRef(togglePlay)
+  toggleRef.current = togglePlay
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.code !== 'Space' || e.repeat) return
+      const t = e.target
+      if (t instanceof Element && t.closest('button, a, select, textarea, input:not([type=range])')) return
+      e.preventDefault()
+      toggleRef.current()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
 
   const seek = (t) => {
     const clamped = Math.max(0, Math.min(t, duration || t))
@@ -374,7 +400,7 @@ export default function Mixer({ jobId, stems }) {
   return (
     <div className="mixer">
       <div className="transport">
-        <button className="primary play" onClick={togglePlay}>{playing ? '⏸ pause' : '▶ play'}</button>
+        <button className="primary play" title="space" onClick={togglePlay}>{playing ? '⏸ pause' : '▶ play'}</button>
         <span className="time">{fmtTime(position)} / {fmtTime(duration)}</span>
         <input type="range" min={0} max={duration || 0} step={0.1} value={position}
           onChange={(e) => seek(Number(e.target.value))} style={{ flex: 1 }} />
@@ -425,8 +451,8 @@ export default function Mixer({ jobId, stems }) {
         ))}
       </div>
       <p className="muted small">
-        tip: drag on a waveform to loop a section · wheel to zoom · solo the guitar · drop the speed — then learn it
-        {loopRegion && <> · looping {fmtTime(loopRegion.start)}–{fmtTime(loopRegion.end)} (double-click to clear)</>}
+        tip: space toggles play · drag on a waveform to loop a section · wheel to zoom · solo the guitar · drop the speed — then learn it
+        {loopRegion && <> · looping {fmtTime(loopRegion.start)}–{fmtTime(loopRegion.end)} (click outside it or double-click to clear)</>}
       </p>
     </div>
   )
