@@ -1,0 +1,58 @@
+# Publishes the built web UI to GitHub Pages.
+#
+# Note: Pages is static hosting — the separation backend (FastAPI, server/)
+# does not run there, so the published site is the UI shell only; uploads and
+# jobs need the local server. Base path matches the repo name for project pages.
+name: Deploy UI to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Build
+        working-directory: web
+        # local serving stays at root; Pages lives under /guitarTabsMe-Off/
+        run: |
+          npm ci
+          npm run build -- --base=/guitarTabsMe-Off/
+
+      # GitHub Pages has no SPA fallback; 404.html gives deep links (/job/:id)
+      # the app shell so client-side routing can take over
+      - name: SPA fallback
+        run: cp web/dist/index.html web/dist/404.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
