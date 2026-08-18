@@ -7,7 +7,7 @@ import './styles.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter>
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
       <header className="topbar">
         <h1><a href="/">🎸 Stem Splitter</a></h1>
         <span className="tagline">isolate the guitar, learn the song</span>
