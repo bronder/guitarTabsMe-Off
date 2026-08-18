@@ -1,5 +1,6 @@
 #!/bin/sh
 # audio-separator launcher: same PYTHONPATH workaround as demucs-run
 # (sandbox breaks CPython venv detection).
-export PYTHONPATH="/home/bronder/source/guitarTabsMe-Off/.venv-demucs/lib/python3.14/site-packages${PYTHONPATH:+:$PYTHONPATH}"
-exec /home/bronder/source/guitarTabsMe-Off/.venv-demucs/bin/audio-separator "$@"
+BASE="$(cd "$(dirname "$0")" && pwd)"
+export PYTHONPATH="$BASE/.venv-demucs/lib/python3.12/site-packages${PYTHONPATH:+:$PYTHONPATH}"
+exec "$BASE/.venv-demucs/bin/audio-separator" "$@"

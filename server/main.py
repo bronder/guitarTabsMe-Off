@@ -23,8 +23,15 @@ MAX_UPLOAD = 100 * 1024 * 1024  # 100MB
 
 app = FastAPI(title="stem splitter")
 app.add_middleware(
-    CORSMiddleware, allow_origins=["*"],
-    allow_methods=["*"], allow_headers=["*"],
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+        "http://localhost:5173",  # vite dev
+        "http://127.0.0.1:5173",
+    ],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
 )
 
 manager = JobManager(lambda job: run_job(job, _update(job.id)))

@@ -1,5 +1,6 @@
 #!/bin/sh
 # Demucs launcher: the sandbox breaks CPython venv detection, so point
 # PYTHONPATH at the venv site-packages directly.
-export PYTHONPATH="/home/bronder/source/guitarTabsMe-Off/.venv-demucs/lib/python3.14/site-packages${PYTHONPATH:+:$PYTHONPATH}"
-exec /home/bronder/source/guitarTabsMe-Off/.venv-demucs/bin/python -m demucs.separate "$@"
+BASE="$(cd "$(dirname "$0")" && pwd)"
+export PYTHONPATH="$BASE/.venv-demucs/lib/python3.12/site-packages${PYTHONPATH:+:$PYTHONPATH}"
+exec "$BASE/.venv-demucs/bin/python" -m demucs.separate "$@"
